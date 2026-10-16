@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Object Type Inspector</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      font: 13px "Segoe UI", sans-serif;
+    }
+
+    body {
+      margin: 0;
+      padding: 16px;
+      color: CanvasText;
+      background: Canvas;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 17px;
+    }
+
+    #hint, .empty, .detail {
+      color: color-mix(in srgb, CanvasText 70%, Canvas);
+    }
+
+    #results {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    article {
+      padding: 10px;
+      border: 1px solid color-mix(in srgb, CanvasText 20%, Canvas);
+      border-radius: 6px;
+    }
+
+    h2 {
+      margin: 0 0 6px;
+      overflow-wrap: anywhere;
+      font-size: 14px;
+    }
+
+    .type {
+      margin: 0;
+      font-weight: 600;
+    }
+
+    .detail {
+      margin: 5px 0 0;
+      overflow-wrap: anywhere;
+    }
+
+    .empty {
+      margin: 12px 0 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Object Type Inspector</h1>
+  <div id="hint">Select a body, face, edge, or component in the canvas.</div>
+  <button id="refresh" type="button">Refresh selection</button>
+  <div id="results" aria-live="polite"></div>
+  <details>
+    <summary>Selection diagnostics</summary>
+    <pre id="diagnostics" style="white-space: pre-wrap; overflow-wrap: anywhere;"></pre>
+  </details>
+
+  <script>
+    const results = document.getElementById('results');
+
+    function addText(parent, tag, className, text) {
+      const element = document.createElement(tag);
+      if (className) element.className = className;
+      element.textContent = text;
+      parent.appendChild(element);
+      return element;
+    }
+
+    function render(data) {
+      results.replaceChildren();
+      document.getElementById('diagnostics').textContent =
+        JSON.stringify(data.diagnostics, null, 2);
+      if (!data.items || data.items.length === 0) {
+        addText(results, 'p', 'type', 'Possible Form / T-Spline');
+        addText(results, 'p', 'detail',
+          'Fusion returned no identifiable selection. If you clicked a model ' +
+          'object, it may be a Form.');
+        addText(results, 'p', 'detail',
+          'This is a guess, not a confirmed type. Blank-space clicks, Escape, ' +
+          'and cleared selections can produce the same result.');
+        return;
+      }
+
+      data.items.forEach((item) => {
+        const card = document.createElement('article');
+        addText(card, 'h2', '', item.name);
+
+        if (item.categories.length === 0) {
+          addText(card, 'p', 'type', item.selectionType);
+          addText(card, 'p', 'detail', 'No solid, surface, mesh, or form body found.');
+        } else {
+          item.categories.forEach((body) => {
+            addText(card, 'p', 'type', body.category);
+            if (item.categories.length > 1) {
+              addText(card, 'p', 'detail', 'Body: ' + body.name);
+            }
+            if (body.material) {
+              const materialLabel = body.material.isPlastic
+                ? 'Material: ' + body.material.name + ' (plastic)'
+                : 'Material: ' + body.material.name;
+              addText(card, 'p', 'detail', materialLabel);
+            }
+          });
+        }
+        results.appendChild(card);
+      });
+    }
+
+    window.fusionJavaScriptHandler = {
+      handle: function(action, data) {
+        if (action === 'selectionChanged') {
+          render(JSON.parse(data));
+        }
+        return 'OK';
+      }
+    };
+
+    document.getElementById('refresh').addEventListener('click', function() {
+      adsk.fusionSendData('refresh', '');
+    });
+
+    adsk.fusionSendData('ready', '');
+  </script>
+</body>
+</html>

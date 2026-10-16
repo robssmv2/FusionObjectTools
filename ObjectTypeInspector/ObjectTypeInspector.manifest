@@ -1,0 +1,13 @@
+{
+    "autodeskProduct": "Fusion",
+    "type": "addin",
+    "id": "ObjectTypeInspector",
+    "author": "Local",
+    "description": {
+        "": "Identify the type and material of selected Fusion objects"
+    },
+    "version": "1.0.0",
+    "runOnStartup": true,
+    "supportedOS": "windows",
+    "editEnabled": true
+}
